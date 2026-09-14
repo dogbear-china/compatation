@@ -6,17 +6,32 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 姓名 | 【请在此处作答】 |
-| 学号 | 【请在此处作答】 |
-| 班级 | 【请在此处作答】 |
-| 完成日期 | 【请在此处作答】 |
+| 姓名 | 熊海昕 |
+| 学号 | 202411081109 |
+| 班级 | 计算机科学与技术 |
+| 完成日期 | 2026.9.14 |
 
 ## 实验环境
 
 在 `assignment1` 目录执行 `make info`，粘贴完整输出：
 
 ```text
-【请在此处作答】
+===== compiler =====
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+===== operating system =====
+Linux 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 GNU/Linux
+===== CPU and cache =====
+CPU(s):                                  18
+On-line CPU(s) list:                     0-17
+Model name:                              Intel(R) Core(TM) Ultra 5 125H
+Thread(s) per core:                      2
+Core(s) per socket:                      9
+Socket(s):                               1
+L1d cache:                               432 KiB (9 instances)
+L1i cache:                               576 KiB (9 instances)
+L2 cache:                                18 MiB (9 instances)
+L3 cache:                                18 MiB (1 instance)
+NUMA node0 CPU(s):                       0-17
 ```
 
 ---
@@ -30,14 +45,20 @@
 3. 解释 `row_ptr[row]`、`row_ptr[row + 1]` 的含义，以及为什么 `row_ptr` 的长度必须为 `rows + 1`。
 
 ```text
-row_ptr = 【请在此处作答】
-col_idx = 【请在此处作答】
-values  = 【请在此处作答】
-y       = 【请在此处作答】
+row_ptr = [0, 1, 3, 5, 6]
+col_idx = [1, 0, 2, 2, 3, 3]
+values  = [2, 1, 3, 4, 5, 6]
+y       = [4.0, 10.0, 32.0, 24.0]
 ```
 
-> 【请在此处作答】
+> 2.因为row_ptr[2]=3,row_ptr[3]=5
+k=3 values[3] * x[col_idx[3]] = 4 * x[2] = 12 sum=0+12=12
+k=4 values[4] * x[col_idx[4]] = 5 * x[3] = 20 sum=12+20=32
 
+3.
+row_ptr[row]：第 row 行第一个非零元素在 col_idx/values 数组中的起始下标（偏移量）
+row_ptr[row + 1]：第 row 行最后一个非零元素的下标加 1，即该行非零元素的结束位置，也是下一行的起始位置。
+rows 行共有 rows + 1 个边界值，即每一行一个起始位置，最后还要多一个结束来标明最后一行的末尾。最后一行的结束位置就是全部非零元素总数，即恒有 row_ptr[0] = 0 且row_ptr[rows] = 非零元素总数。
 ---
 
 ## Q02：怎样写出正确、通用的串行 SpMV（3 分）
@@ -48,13 +69,29 @@ y       = 【请在此处作答】
 2. 说明矩形矩阵中 `x` 和 `y` 的长度分别由什么决定。
 3. 选择一个曾经失败的公开用例，记录现象、原因和修复方法。(非强制)
 
-> 【请在此处作答】
+> 
+[通过] 普通 4x4
+[通过] 中间含空行
+[通过] 首行和末行为空
+[通过] 宽矩阵 2x4
+[通过] 高矩阵 4x2
+[通过] 0x0
+[通过] 1x1
+[通过] 单一长行
+[通过] 正负数抵消
 
+公开测试：9/9 通过。
+
+1. CSR 用 row_ptr 中相邻两个值相等来表示空行。第 row 行的非零元素区间是 row_ptr[row],row_ptr[row+1]，当这一行为空时，区间长度为 0，即：row_ptr[row] == row_ptr[row + 1]
+2. x（输入向量）的长度 = cols（列数）
+   y（输出向量）的长度 = rows（行数）
+3. 
+未遇到失败案例
 | 失败用例 | 错误现象 | 根本原因 | 修复方法 |
 | --- | --- | --- | --- |
 | 【请在此处作答】 | 【请在此处作答】 | 【请在此处作答】 | 【请在此处作答】 |
 
-最终公开测试结果：`【请在此处作答】`
+最终公开测试结果：`9/9 通过`
 
 ---
 
@@ -72,8 +109,25 @@ $$
 =\frac{\text{FLOP}}{\text{Bytes transferred}}
 $$
 
-> 【请在此处作答】
-
+> 
+1. 
+$$
+T(m, \mathrm{nnz}) = O(m + \mathrm{nnz})
+$$
+2. 
+浮点操作：每个非零元素执行 1 次乘法 + 1 次加法，即 2 FLOP。
+总 FLOP $= 2\cdot\mathrm{nnz} = 2\times65536 =131072$
+每个非零元素的主要访存量=values[k] + col_idx[k]+ x[col_idx[k]] + row_ptr + y =4+4+4+16388/65536+16384/65536≈12.5
+3. 
+$$
+\text{Arithmetic Intensity} = \frac{131072\ \text{FLOP}}{819204\ \text{B}} \approx 0.16\ \text{FLOP/byte}
+$$
+算数强度远0.16远低于平衡点，说明 SpMV 是内存受限，更可能限制性能的硬件资源为内存宽带和Cache体系
+4. 
+x[col_idx[k]] 的间接读最受缓存影响：若 x 整体或访问到的片段能留在 Cache 里（例如 Q05 的 banded 矩阵，相邻行读取的 x 区间大量重叠），这一项的 4字节/非零元就不必每次都来自主存，实际 DRAM 流量远小于 $4\cdot\mathrm{nnz}$
+row_ptr 和 y：数据量很小、且被反复/顺序访问，首次读入后基本常驻 Cache，之后几乎不产生额外主存传输
+values 和 col_idx：顺序流式访问，单次 SpMV 中基本只读一遍，缓存复用有限，但硬件预取能掩盖部分延迟；这两项仍大致按 $4+4$ 字节/非零元计入主存流量
+所以缓存命中的效果是：把"逻辑访问量"中可复用的部分（主要是间接读的 x、以及 row_ptr/y）从主存传输里扣除，实际传输字节数会小于819204
 ---
 
 ## Q04：怎样得到可信的性能数据（2 分）
