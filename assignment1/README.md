@@ -54,7 +54,8 @@ y       = [4.0, 10.0, 32.0, 24.0]
 > 2.因为row_ptr[2]=3,row_ptr[3]=5
 k=3 values[3] * x[col_idx[3]] = 4 * x[2] = 12 sum=0+12=12
 k=4 values[4] * x[col_idx[4]] = 5 * x[3] = 20 sum=12+20=32
-3.row_ptr[row]：第 row 行第一个非零元素在 col_idx/values 数组中的起始下标（偏移量）
+
+>3.row_ptr[row]：第 row 行第一个非零元素在 col_idx/values 数组中的起始下标（偏移量）
 row_ptr[row + 1]：第 row 行最后一个非零元素的下标加 1，即该行非零元素的结束位置，也是下一行的起始位置。
 rows 行共有 rows + 1 个边界值，即每一行一个起始位置，最后还要多一个结束来标明最后一行的末尾。最后一行的结束位置就是全部非零元素总数，即恒有 row_ptr[0] = 0 且row_ptr[rows] = 非零元素总数。
 ---
